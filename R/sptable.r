@@ -1,14 +1,21 @@
-#' Convert from Spatial*DataFrame to table.
+#' Convert from sp package 'Spatial' classes to a table.
 #'
-#' Decompose a Spatial object to a single table structured as a row for every coordinate in all the sub-geometries, including duplicated coordinates that close polygonal rings, close lines and shared vertices between objects. 
+#' Decompose a \code{\link[sp]{Spatial}} object to a single table structured as a row for every coordinate in all the sub-geometries, including duplicated coordinates that close polygonal rings, close lines and shared vertices between objects. 
 #' 
-#' Input can be a \code{\link[sp]{SpatialPolygonsDataFrame}}, \code{\link[sp]{SpatialLinesDataFrame}} or a \code{\link[sp]{SpatialPointsDataFrame}}.
-#' @param x \code{\link[sp]{Spatial}} object
-#' @param ... ignored
-#'
+#' Input can be a \code{\link[sp]{SpatialPolygonsDataFrame}}, \code{\link[sp]{SpatialLinesDataFrame}}, \code{\link[sp]{SpatialMultiPointsDataFrame}} or a \code{\link[sp]{SpatialPointsDataFrame}}.
 #' For simplicity \code{sptable} and its inverse \code{sp} assume that all geometry can be encoded with object, branch, island, order, x and y. 
 #' and that the type of topology is identified by which of these are present. 
-#' @return \code{\link[dplyr]{tbl_df}} data_frame with columns
+#' 
+#' This is analogous to the following but in spbabel provides a consistent way to round-trip back to Spatial classes and other forms. 
+#' \itemize{
+#'  \item \code{\link[broom]{sp_tidiers}} (replacement of 'ggplot2::fortify').
+#'  \item \code{\link[raster]{geom}}
+#'  \item \code{\link[sp]{SpatialPolygonsDataFrame-class}} with its 'as(as(x, "SpatialLinesDataFrame"), "SpatialPointsDataFrame")' workflow. 
+#' }
+#' 
+#' @param x \code{\link[sp]{Spatial}} object
+#' @param ... ignored
+#' @return \code{\link[tibble]{tibble}}  with columns
 #' \itemize{
 #'  \item SpatialPolygonsDataFrame "object_"   "branch_"   "island_"   "order_" "x"    "y_"
 #'  \item SpatialLinesDataFrame "object_"   "branch_" "order_"  "x_"      "y_"
@@ -16,7 +23,32 @@
 #'  \item SpatialMultiPointsDataFrame "object_" "branch_" "x_" "y_"
 #' }
 #' @export
-#'
+#' @examples 
+#' ## holey is a decomposed SpatialPolygonsDataFrame
+#' spdata <- sp(holey)
+#' library(sp)
+#' plot(spdata, col = rainbow(nrow(spdata), alpha = 0.4))
+#' points(holey$x_, holey$y_, cex = 4)
+#' holes <- subset(holey, !island_)
+#' ## add the points that only belong to holes
+#' points(holes$x_, holes$y_, pch = "+", cex = 2)
+#' 
+#' ## manipulate based on topology
+#' ## convert to not-holes
+#' notahole <- holes
+#' notahole$island_ <- TRUE
+#' #also convert to singular objects - note that this now means we have an overlapping pair of polys
+#' #because the door had a hole filled by another object
+#' notahole$object_ <- notahole$branch_
+#' plot(sp(notahole), add = TRUE, col = "red")
+#' 
+#' ## example using in-place modification with sptable<-
+#' library(maptools)
+#' data(wrld_simpl)
+#' spdata2 <- spdata
+#' library(dplyr)
+#' ## modify the geometry on this object without separating the vertices from the objects
+#' sptable(spdata2) <- sptable(spdata2) %>% mutate(x_ = x_ + 10, y_ = y_ + 5)
 sptable <- function(x, ...) {
   UseMethod("sptable")
 }
@@ -54,9 +86,9 @@ sptable.SpatialMultiPointsDataFrame <- function(x, ...) {
    df
 }
 ## TODO multipoints
-#' @importFrom dplyr data_frame
+#' @importFrom tibble as_tibble
 mat2d_f <- function(x) {
-  as_data_frame(as.data.frame((x)))
+  as_tibble(as.data.frame((x)))
 }
 
 
@@ -96,10 +128,19 @@ mat2d_f <- function(x) {
          poly = !x@polygons[[i]]@Polygons[[j]]@hole
          )
 }
+
+.island <- function(x, i, j, type) {
+  switch(type, 
+         line = NULL, 
+         ## negate here since it will be NULL outside for lines
+         poly = !x@polygons[[i]]@Polygons[[j]]@hole
+  )
+}
 ## adapted from raster package R/geom.R
 ## generalized on Polygon and Line
 #' @importFrom sp geometry
 #' @importFrom dplyr bind_rows
+#' @importFrom tibble tibble
 .gobbleGeom <-   function(x,  ...) {
   gx <- geometry(x)
   typ <- switch(class(gx), 
@@ -116,15 +157,15 @@ mat2d_f <- function(x) {
                      nr <- nrow(coords)
                      lst <- list(
                                  branch_ = rep(j + cnt, nr), 
-                                 island_ = rep(.holes(x, i, j, typ), nr), 
+                                 island_ = rep(.island(x, i, j, typ), nr), 
                                  order_ = seq(nr),
                                  x_ = coords[,1], 
                                  y_ = coords[,2])
-                     as_data_frame(lst[!sapply(lst, is.null)])
+                     as_tibble(lst[!sapply(lst, is.null)])
                    }
       )
       psd <- do.call(bind_rows, ps)
-      objlist[[i]] <- bind_cols(data_frame(object_ = rep(i, nrow(psd))), psd)
+      objlist[[i]] <- bind_cols(tibble(object_ = rep(i, nrow(psd))), psd)
       cnt <- cnt + nsubobs
     }
   obs <- do.call(bind_rows, objlist)
@@ -140,16 +181,16 @@ mat2d_f <- function(x) {
 
 .pointsGeom <-  function(x, ...) {
   ## this will have to become a tbl
-  xy <- as_data_frame(as.data.frame(coordinates(x)))
+  xy <- as_tibble(as.data.frame(coordinates(x)))
   cnames <- c('object_', 'x_', 'y_')
   ##xy <- cbind(1:nrow(xy), xy)
   if (is.list(x@coords)) {
     br <- rep(seq_along(x@coords), unlist(lapply(x@coords, nrow)))
     cnames <- c('branch_', 'object_', 'x_', 'y_')
-    xy <- bind_cols(data_frame(br), data_frame(br), xy)
+    xy <- bind_cols(tibble(br), tibble(br), xy)
   } else {
     br <- seq(nrow(xy))
-    xy <- bind_cols(data_frame(br), xy)
+    xy <- bind_cols(tibble(br), xy)
   }
   
   colnames(xy) <- cnames

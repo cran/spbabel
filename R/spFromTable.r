@@ -6,13 +6,13 @@ setOldClass( c("grouped_df", "tbl_df", "tbl", "data.frame" ) )
 
 #' Convert from dplyr tbl form to Spatial*DataFrame.
 #'
-#' @param x data_frame as created by \code{\link{sptable}}
+#' @param x tibble as created by \code{\link{sptable}}
 #' @param crs projection, defaults to \code{NA_character_}
 #' @param attr_tab remaining data from the attributes
 #' @param ... unused
 #' @return Spatial*
 #' @export
-#' @importFrom dplyr %>% distinct_ as_data_frame
+#' @importFrom dplyr %>% distinct_ 
 #' @importFrom sp coordinates CRS SpatialPoints SpatialPointsDataFrame Line Lines SpatialLines SpatialLinesDataFrame Polygon Polygons SpatialPolygons SpatialPolygonsDataFrame
 #' @examples 
 #' library(dplyr)
@@ -45,7 +45,7 @@ spFromTable <- function(x, attr_tab =  NULL, crs, ..., topol_ = NULL) {
   if (is.null(crs)) crs <- NA_character_
   ## raster::geom form
   if (is.null(topol_)) target <- detectSpClass(x)
-  dat <- x %>% distinct_("object_")
+  dat <- x %>% distinct_("object_", .keep_all = TRUE)
 
    n_object <- nrow(dat)
    n_attribute <- nrow(attr_tab)
@@ -56,7 +56,8 @@ spFromTable <- function(x, attr_tab =  NULL, crs, ..., topol_ = NULL) {
   gom <- switch(target,
                 SpatialPolygonsDataFrame = reverse_geomPoly(x, dat, crs),
                 SpatialLinesDataFrame = reverse_geomLine(x, dat, crs),
-                SpatialPointsDataFrame = reverse_geomPoint(x, dat, crs)
+                SpatialPointsDataFrame = reverse_geomPoint(x, dat, crs), 
+                SpatialMultiPointsDataFrame = reverse_geomMultiPoint(x, dat, crs)
   )
   gom
 }
@@ -67,9 +68,9 @@ spFromTable <- function(x, attr_tab =  NULL, crs, ..., topol_ = NULL) {
 geomnames <- function() {
   list(SpatialPolygonsDataFrame = c("object_",  "branch_", "island_", "order_", "x_", "y_"),
        SpatialLinesDataFrame = c("object_",  "branch_", "order_", "x_", "y_"),
-       SpatialPointsDataFrame = c("object_", "x_", "y_"), 
        ## strictly why not allow ordering on Multipoints, but why use sp for them anyway . . .
-       SpatialMultPointsDataFrame = c("branch_", "object_", "x_", "y_"))
+       SpatialMultiPointsDataFrame = c("branch_", "object_", "x_", "y_"),
+       SpatialPointsDataFrame = c("object_", "x_", "y_"))
 }
 
 
@@ -82,7 +83,7 @@ reverse_geomPoly <- function(x, d, proj) {
   ## match.ID should be replaced by method to carry the original rownames somehow
   SpatialPolygonsDataFrame(SpatialPolygons(lapply(objects, loopBranchPoly), proj4string = CRS(proj)), d, match.ID = FALSE)
 }
-loopBranchPoly <- function(a) Polygons(lapply(split(a, a$branch_), function(b) Polygon(as.matrix(b[, c("x_", "y_")]), hole = !b$island_[1L] == 1)), as.character(a$object_[1L]))
+loopBranchPoly <- function(a) Polygons(lapply(dropZeroRowFromList(split(a, a$branch_)), function(b) Polygon(as.matrix(b[, c("x_", "y_")]), hole = !b$island_[1L] == 1)), as.character(a$object_[1L]))
 
 
 reverse_geomLine <- function(x, d, proj) {
@@ -91,7 +92,8 @@ reverse_geomLine <- function(x, d, proj) {
   if (ncol(d) < 1L) d$rownumber_ <- seq(nrow(d))  ## we might end up with no attributes
   SpatialLinesDataFrame(SpatialLines(lapply(objects, loopBranchLine), proj4string = CRS(proj)), d)
 }
-loopBranchLine<- function(a) Lines(lapply(split(a, a$branch_), function(b) Polygon(as.matrix(b[, c("x_", "y_")]))), as.character(a$object_[1L]))
+dropZeroRowFromList <- function(x) x[unlist(lapply(x, nrow)) > 0L]
+loopBranchLine<- function(a) Lines(lapply(dropZeroRowFromList(split(a, a$branch_)), function(b) Polygon(as.matrix(b[, c("x_", "y_")]))), as.character(a$object_[1L]))
 
 reverse_geomPoint <- function(a, d, proj) {
   # stop("not implemented")
@@ -103,7 +105,7 @@ reverse_geomPoint <- function(a, d, proj) {
   SpatialPointsDataFrame(spts, d, proj4string = CRS(proj))
 }
 #' @importFrom sp SpatialMultiPointsDataFrame SpatialMultiPoints
-reverse_geomMultPoint <- function(a, d, proj) {
+reverse_geomMultiPoint <- function(a, d, proj) {
   d$branch_ <- d$object_  <- d$x_ <- d$y_ <- NULL
   if (ncol(d) < 1L) d$rownumber_ <- seq(nrow(d))  ## we might end up with no attributes
   

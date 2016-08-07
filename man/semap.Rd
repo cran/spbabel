@@ -6,9 +6,9 @@
 \alias{semap}
 \title{"South-east" map data.}
 \description{
-Created in /data-raw/ \code{semap} is the setable() version of some of maptools wrld_simpl, and \code{seatt} is the matching attribute data, linked by `object`.
+Created in /data-raw/ \code{semap} is the \code{sptable} version of some of \code{\link[maptools]{wrld_simpl}}, and \code{seatt} is the matching attribute data, linked by 'object_'.
 
-Created in /data-raw/
+Created in /data-raw/.
 }
 \examples{
 # recreate as sp object

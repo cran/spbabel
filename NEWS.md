@@ -1,3 +1,25 @@
+# spbabel 0.4.0
+
+* new function 'map_table' to produce the more general multiple-table model
+
+* branch IDs can now be factor, before this resulted in empty data.frames from split
+
+* moved to using character IDs for object, branch, vertex
+
+* added track data set
+
+* added holey data set
+
+* update to use tibble rather than dplyr data_frame
+
+* fix MultiPoints
+
+* updates for dplyr `distinct(.keep_all)`
+
+* extra documentation added
+
+* fix up package structure for CRAN
+
 # spbabel 0.3.2
 
 * removed internal use of a matrix in .pointsGeom
