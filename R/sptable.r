@@ -10,7 +10,7 @@
 #' \itemize{
 #'  \item \code{\link[broom]{sp_tidiers}} (replacement of 'ggplot2::fortify').
 #'  \item \code{\link[raster]{geom}}
-#'  \item \code{\link[sp]{SpatialPolygonsDataFrame-class}} with its 'as(as(x, "SpatialLinesDataFrame"), "SpatialPointsDataFrame")' workflow. 
+#'  \item \code{\link[sp]{SpatialPolygonsDataFrame-class}} with its 'as(as(x, "SpatialLinesDataFrame"), "SpatialPointsDataFrame")' work flow. 
 #' }
 #' 
 #' @param x \code{\link[sp]{Spatial}} object
@@ -53,23 +53,46 @@ sptable <- function(x, ...) {
   UseMethod("sptable")
 }
 
+
 #' @export
+#' @importFrom stats setNames
 #' @rdname sptable
-sptable.SpatialPolygonsDataFrame <- function(x, ...) {
-  .gobbleGeom(x, ...)
+sptable.SpatialPolygons <- function(x, ...) {
+    x <- setNames(as_tibble(rasterpoly(x)), 
+                  c("object_",  "part_", "branch_", "island_", "x_", "y_"))
+    x[["part_"]] <- NULL
+    x[["order_"]] <- unlist(lapply(split(x[["branch_"]], x[["branch_"]]), seq_along), use.names = FALSE)
+    x[["island_"]] <- x[["island_"]] == 0
+    x[["object_"]] <- as.integer(x[["object_"]])
+    x[["branch_"]] <- as.integer(x[["branch_"]])
+    x[["order_"]] <- as.integer(x[["order_"]])
+    x[, c("object_", "branch_", "island_", "order_", "x_", "y_")]
+  
 }
+# sptable.SpatialPolygonsDataFrame <- function(x, ...) {
+#   .gobbleGeom(x, ...)
+# }
 
 #' @export
 #' @rdname sptable
-sptable.SpatialLinesDataFrame <- function(x, ...) {
-  mat2d_f(.gobbleGeom(x, ...))
+#' @importFrom stats setNames
+sptable.SpatialLines <- function(x, ...) {
+
+    x <- setNames(as_tibble(rasterline(x)), 
+                  c("object_",  "part_", "branch_", "x_", "y_"))
+    x[["order_"]] <- unlist(lapply(split(x[["branch_"]], x[["branch_"]]), seq_along), use.names = FALSE)
+    x[["part_"]] <- NULL
+    x[["object_"]] <- as.integer(x[["object_"]])
+    x[["branch_"]] <- as.integer(x[["branch_"]])
+    x[["order_"]] <- as.integer(x[["order_"]])
+    x[, c("object_", "branch_", "order_", "x_", "y_")]
+  
 }
 
 #' @export
 #' @rdname sptable
 #' @importFrom dplyr bind_cols
 sptable.SpatialPointsDataFrame <- function(x, ...) {
-  #df <- mat2d_f(.pointsGeom(x, ...))
   df <- .pointsGeom(x, ...)
   df$object_ <- as.integer(df$object_) ## not needed once .pointsGeom uses tbl_df
   df
@@ -79,17 +102,16 @@ sptable.SpatialPointsDataFrame <- function(x, ...) {
 #' @rdname sptable
 #' @importFrom dplyr bind_cols
 sptable.SpatialMultiPointsDataFrame <- function(x, ...) {
-   #df <- mat2d_f(.pointsGeom(x))
   df <- .pointsGeom(x, ...)
-   df$object_ <- as.integer(df$object_) 
-   df$branch_ <- as.integer(df$branch_) 
-   df
+  df$object_ <- as.integer(df$object_) 
+  df$branch_ <- as.integer(df$branch_) 
+  df
 }
-## TODO multipoints
-#' @importFrom tibble as_tibble
-mat2d_f <- function(x) {
-  as_tibble(as.data.frame((x)))
-}
+# ## TODO multipoints
+# #' @importFrom tibble as_tibble
+# mat2d_f <- function(x) {
+#   as_tibble(as.data.frame((x)))
+# }
 
 
 #' @rdname sptable
@@ -100,81 +122,24 @@ mat2d_f <- function(x) {
 #' @export
 "sptable<-" <-
   function(object, value) {
-       sp(value, as.data.frame(object), proj4string(object))
-
+    # joiner <- idmaker(20)
+    #    datadata <- as.data.frame(object) 
+    #    datadata[[joiner]] <- seq(nrow(datadata))
+    #    value[[joiner]] <- as.integer(factor(value[["object_"]]))
+    #    datadata <- inner_join(datadata, value[, joiner])
+    if (nrow(object)  == length(unique(value$object_))) {
+      ## assume ok
+    } else {
+      warning("dropping attribute data since object number and metadata rows not the same")
+      return(sp(value,  crs = proj4string(object)))
+    }
+    sp(value,  as.data.frame(object), proj4string(object))
+    
   }
 
 
 
 
-
-.coordsIJ <- function(x, i, j, type) {
-  switch(type, 
-         line = x@lines[[i]]@Lines[[j]]@coords, 
-         poly =  x@polygons[[i]]@Polygons[[j]]@coords)
-}
-
-.nsubobs <- function(x, i, type) {
-  length(
-    switch(type, 
-         line = x@lines[[i]]@Lines, 
-         poly = x@polygons[[i]]@Polygons)
-)
-}
-.holes <- function(x, i, j, type) {
-  switch(type, 
-         line = NULL, 
-         ## negate here since it will be NULL outside for lines
-         poly = !x@polygons[[i]]@Polygons[[j]]@hole
-         )
-}
-
-.island <- function(x, i, j, type) {
-  switch(type, 
-         line = NULL, 
-         ## negate here since it will be NULL outside for lines
-         poly = !x@polygons[[i]]@Polygons[[j]]@hole
-  )
-}
-## adapted from raster package R/geom.R
-## generalized on Polygon and Line
-#' @importFrom sp geometry
-#' @importFrom dplyr bind_rows
-#' @importFrom tibble tibble
-.gobbleGeom <-   function(x,  ...) {
-  gx <- geometry(x)
-  typ <- switch(class(gx), 
-                SpatialPolygons = "poly", 
-                SpatialLines = "line")
-  nobs <- length(geometry(x))
-  objlist <- vector("list", nobs)
-  cnt <- 0L
-  for (i in seq(nobs)) {
-      nsubobs <- .nsubobs(x, i, typ) 
-      ps <- lapply(1:nsubobs,
-                   function(j) {
-                     coords <- .coordsIJ(x, i, j, typ)
-                     nr <- nrow(coords)
-                     lst <- list(
-                                 branch_ = rep(j + cnt, nr), 
-                                 island_ = rep(.island(x, i, j, typ), nr), 
-                                 order_ = seq(nr),
-                                 x_ = coords[,1], 
-                                 y_ = coords[,2])
-                     as_tibble(lst[!sapply(lst, is.null)])
-                   }
-      )
-      psd <- do.call(bind_rows, ps)
-      objlist[[i]] <- bind_cols(tibble(object_ = rep(i, nrow(psd))), psd)
-      cnt <- cnt + nsubobs
-    }
-  obs <- do.call(bind_rows, objlist)
-  
-  rownames(obs) <- NULL
-
-  attr(obs, "crs") <- proj4string(x)
-  return( obs )
-}
 
 
 
@@ -185,7 +150,7 @@ mat2d_f <- function(x) {
   cnames <- c('object_', 'x_', 'y_')
   ##xy <- cbind(1:nrow(xy), xy)
   if (is.list(x@coords)) {
-    br <- rep(seq_along(x@coords), unlist(lapply(x@coords, nrow)))
+    br <- rep(seq_along(x@coords), unlist(lapply(x@coords, nrow), use.names = FALSE))
     cnames <- c('branch_', 'object_', 'x_', 'y_')
     xy <- bind_cols(tibble(br), tibble(br), xy)
   } else {

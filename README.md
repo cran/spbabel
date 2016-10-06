@@ -16,6 +16,38 @@ spbabel: a tidy view of Spatial
 
 Spbabel provides simple tools to flip between Spatial and tidy forms of data. This package aims assist in the ongoing development of tools for spatial data in R. There is limited use for users directly, though see examples in the vignettes.
 
+This framework allows for the easy transfer between the different spatial representations in R, in generic database-ready tables that can be transferred from and to R in many different ways.
+
+Currently supported are
+
+-   sp
+-   ggplot2
+-   gris
+
+In progress are
+
+-   graphics
+-   rgl
+-   maps
+-   spatstat
+-   sf
+-   trip
+
+Planned are
+
+-   PBSmapping
+-   lawn
+
+-   the trajectory / animal tracking packages, such as adehabitatLT, trajectories, and dozens of others
+
+If you know of other variants that should be included, please file an issue or let me know. Once the basic framework is available, adding new conversions will be pretty simple.
+
+There already are converters for Spatial classes, why do this? There are converters, but the sp classes reflect modern GIS standards and thes are quite restrictive. There are many spatial data structures in R that cannot be represented in sp, and that cannot be represented by extending the existing classes. To do so requires a more fundamental re-write.
+
+Conversions between existing forms is simply a side-benefit of having a more general framework. The main motivation is to be able to convert these commonly used types into forms ready for modern tools for interactive use, and to allow database back-ending without proliferation of complicated workarounds doing constant translation.
+
+Not all pairwise combinations are of interest, but most importantly some of the representations are more general than others. The only one that can be used to represent all others is a set of relational tables, and 'gris' does most of this, but 'ggplot2' also comes pretty close. Neither have been used extensively to do this though!
+
 Installation
 ------------
 
@@ -71,6 +103,7 @@ Why do this?
 I want these things, and spbabel is the right compromise for where to start:
 
 -   flexibility in the number and type/s of attribute stored as "coordinates", x, y, lon, lat, z, time, temperature, etc.
+-   ability to store attributes on parts (!) i.e. the state is the object, the county is the part
 -   shared vertices
 -   ability to store points, lines and areas together, sharing topology where appropriate
 -   provide a flexible basis for conversion between other formats.
@@ -79,4 +112,8 @@ I want these things, and spbabel is the right compromise for where to start:
 -   integration with D3 via htmlwidgets, with shiny, and with gggeom ggvis or similar
 -   data-flow with dplyr piping as the engine behind a D3 web interface
 
+Flexibility in attributes generally is the key to breaking out of traditional GIS constraints that don't allow clear continuous / discrete distinctions, or time-varying objects/events, 3D/4D geometry, or clarity on topology versus geometry. When everything is tables this becomes natural, and we can build structures like link-relations between tables that transfer data only when required.
+
 The ability to use [Manifold System](http://www.georeference.org/doc/manifold.htm) seamlessly with R is a particular long-term goal, and this will be best done(TM) via dplyr "back-ending".
+
+Please note that this project is released with a [Contributor Code of Conduct](CONDUCT.md). By participating in this project you agree to abide by its terms.

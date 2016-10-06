@@ -23,31 +23,7 @@
 # }
 
 
-#' Cascading subset on object for \code{map_table}. 
-#'
-#' @param x 
-#' @param ... 
-#' @importFrom dplyr semi_join
-#' @noRd
-semi_cascade <- function(x, ..., tables = c("o", "b", "bXv", "v")) {
-  first <- dplyr::filter(x[[tables[1]]], ...)
-  x[[1]] <- last <- first 
-  tables <- tables[-1]
-  for (itab in tables) {
-    x[[itab]] <- last <- dplyr::semi_join(x[[itab]], last)
-  }
-  x
-}
 
-inner_cascade <- function(x, ..., tables = c("o", "b", "bXv", "v")) {
-  first <- dplyr::filter(x[[tables[1]]], ...)
-  #x[[1]] <- last <- first 
-  tables <- tables[-1]
-  for (itab in tables) {
-    first <-  dplyr::inner_join(x[[itab]], first)
-  }
-  first
-}
 
 
 #' A decomposition of 'vector' map data structures to tables. 
@@ -85,18 +61,34 @@ map_table <- function(x, ...) {
 }
 
 
+
 #' @export
 #' @importFrom tibble as_tibble
 map_table.Spatial <- function(x, ...) {
-  tabmap <- sptable(x)
-  tabdat <- tibble::as_tibble(x)
   
+  # fugn incongruous points as ever
+  as.data.frame.SpatialMultiPointsDataFrame <- function(x, ...) {
+    x@data
+  }
+  ## I will regret these internal functions . . .
+  ## needs a proper fix
+  as.data.frame.SpatialPointsDataFrame <- function(x, ...) {
+    x@data
+  }
+  
+  
+  tabmap <- sptable(x)
+  ## why did this ever work?
+#  tabdat <- tibble::as_tibble(x)
+  tabdat <- tibble::as_tibble(as.data.frame(x)) 
   ## remove this if sptable is updated
   tabdat$object_ <- id_n(nrow(tabdat))
   tabmap$object_ <- tabdat$object_[tabmap$object_]
-  
+  if (class(x) == "SpatialPointsDataFrame") {
+    ## no branches
+  } else {
   tabmap$branch_ <- id_n(length(unique(tabmap$branch_)))[factor(tabmap$branch_)]
- 
+  }
   out <- map_table_From2(tabdat, tabmap)
   # no class or methods in spbabel for map_table()
   #class(out) <- c("map_table", "list")
@@ -124,21 +116,23 @@ map_table_From2 <- function(dat1, map1) {
  
   ## classify unique vertices by unique index
   ## could tidy this up some more . . .
-  map1 <- map1 %>%
-    mutate(vertex_  = as.integer(factor(do.call(paste, select_(map1, .dots = v_atts)))))  
-  #mutate(vertex_ = id_n(length(unique(vertex_)))[vertex_])
-  map1$vertex_ <- id_n(length(unique(map1$vertex_)))[map1$vertex_]
-  
-  branchV_to_segmentV <- function(x) {
-    head(matrix(x, ncol = 2, nrow = length(x) + 1L), -1L)
-  }
+  #fpaste <- function(...) paste(..., sep = "_")
+  #map1 <- #map1 %>%
+  #  mutate(map1, vertex_  = as.integer(factor(do.call(paste, select_(map1, .dots = v_atts))))) 
+  ver_ <- as.integer(factor(do.call(paste, select_(map1, .dots = v_atts))))
+  map1[["vertex_"]] <- id_n(length(unique(ver_)))[ver_]
+  #map1[["vertex_"]] <- id_n(length(unique(vertex_)))[vertex_]
+
   
   #map1$vertex_ <- id_nrow(nrow(map1))[map1$vertex_]
   ## branches, owner object and island status
-  b <- map1 %>% distinct_(.dots = b_atts) 
+  b <- distinct_(map1, .dots = b_atts) 
   ## four tables (dat1, map2, map4, map5)
-  bXv <- map1 %>% dplyr::select_(.dots = bxv_atts)
-  v <- map1 %>% distinct_(.dots = c(v_atts, "vertex_"))
+
+    bXv <- dplyr::select_(map1, .dots = bxv_atts)
+    #print(head(map1))
+    v <- map1[!duplicated(map1$vertex_), c(v_atts, "vertex_")]
+    #  v <- map1 %>% distinct_(.dots = c(v_atts, "vertex_"))
   res <- list(o = dat1, b = b,  bXv = bXv, v = v)
   res
 }

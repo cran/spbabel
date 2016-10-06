@@ -68,7 +68,21 @@ test_that("mismatched attributes and object number is an error", {
   expect_error(sp(poly1tab, attr_tab = data.frame(x = sample(1:20, 1))), "number of rows in attr must match distinct object in x")
 })
 
-sptable(poly1) <-  dplyr::mutate(sptable(poly1), x_ = x_ - 5)
-test_that("replacement sptable works", {
-  expect_that(poly1, is_a("SpatialPolygonsDataFrame"))
+
+library(sp)
+library(dplyr)
+library(raster)
+cl <- spbabel::sptable(rasterToContour(raster(volcano)))
+
+cl0 <- cl %>% filter(object_ == -1) #%>% mutate(object_ = as.character(i)) #%>% slice(2:(n()-1))
+
+test_that("dud inputs caught", {
+  expect_error(spbabel::sp(cl0))  #error
+  
+  expect_error(spbabel::sp(cl0, topol_ = "SpatialPointsDataFrame"))
+  
+  
+  expect_silent(spbabel::sp(cl, topol_  = "SpatialLinesDataFrame"))  ## ok)
+  
 })
+

@@ -1,3 +1,21 @@
+# spbabel 0.4.5
+
+* fixed bug in sp() logic that recreates a SpatialLines (it was using a Polygon under the hood)
+
+* sped up sptable by using old raster code, after generalizing to the all types
+
+* new map_table method for 'trip' objects
+
+* workarounds for SpatialPoints, SpatialMultiPoints (removed problematic high-level use of as_tibble, which
+meant that points/multipoints weren't being built properly)
+
+* use duplicated rather than distinct_, see https://github.com/mdsumner/spbabel/issues/27
+
+* semi_cascade now keeps quiet
+
+* spbabel<- replacement function now drops attributes if object and row numbers
+not the same
+
 # spbabel 0.4.0
 
 * new function 'map_table' to produce the more general multiple-table model
