@@ -1,10 +1,10 @@
-3bd6a8cf43c43c028a919d2be062c7fe *DESCRIPTION
-823d1b86f9b2a73940cd7273444a9c86 *NAMESPACE
-c5d1647eb8613d3134ead889e0310c83 *NEWS.md
+a564bdc85e54956bb8398331a5c5d164 *DESCRIPTION
+8f958fd6d8b733f5fd36d98e4730e580 *NAMESPACE
+1f9b7817ca47b408df44143c9dcd1c5a *NEWS.md
 effabe879ff223685de81902449085aa *R/map_table.r
 562746a8a39cafdf33ef89ab0367b444 *R/release-questions.r
-6b3af4a1fb7ceb2b0211d59bf6794932 *R/sf.r
-2852d6571accb53ff1630799328f57e6 *R/sfFromTable.r
+73e763d5ff828895351d8c3bda162c58 *R/sf.r
+75dd79d93d9b7bba693b85626b1a0f26 *R/sfFromTable.r
 f89a2869769965e3402f28b66d4e5065 *R/sp.r
 c88bbb1e3e22032f019ebbfe72bf2e22 *R/spFromTable.r
 983d2bc1c04c27ef31d8118174995f0b *R/spbabel-package.r
@@ -12,7 +12,7 @@ b12c8d5b3bbb587e98f09e61d2d4272f *R/sptable.r
 b9f9f476a5f70aa3c3ef54d2db4827bf *R/trip.r
 99a12d411e095722c89080a866226287 *R/unique_ids.r
 7198d875b1bb0e985fe179f452746d6a *R/utils.r
-45eb2e3c7d120c0487da3a2991cc9b41 *README.md
+0e8800ce3ba0cbe831cf17ec4d8ac039 *README.md
 5dab7a5ef269dd7722a2f0283b29b9ec *build/vignette.rds
 91f9c6608ebbd105dc0fba7434eaca33 *data/holey.rda
 0b145b54af23e8e94fb7dccd66ba1ab9 *data/mpoint1.rda
@@ -23,10 +23,10 @@ ce40051e03525dd963da4b5600da0d8f *inst/devignette/geometry-tables.Rmd
 34cebd9e3ed33629390e9e4edd0e0f10 *inst/devignette/geometry-tables_demand-read.Rmd
 ae01fc366ea57eb9b69f9196ecac8201 *inst/doc/sfbabel.R
 b9ad462033373d54772417dabf20de07 *inst/doc/sfbabel.Rmd
-bd1eb50199135be6158be2cea9d63e71 *inst/doc/sfbabel.html
+c1195e47a3e82a4987dc038a4ebe94b0 *inst/doc/sfbabel.html
 491857251c2d4b336f0ffd2da5e4f963 *inst/doc/spbabel.R
 f8e330cde79ccf4e1025b46edcfff8c9 *inst/doc/spbabel.Rmd
-ae6bab79da31d00bde19d0aa74a03562 *inst/doc/spbabel.html
+9c82c02729f0d9090174cba6e059d763 *inst/doc/spbabel.html
 48c3ed15033554eacb7bf3bbf1661b48 *inst/examples/faketrip.r
 6233346cb2ef8ef783cec42c455b61f6 *inst/extdata/testdata/nc.rds
 c636af4362d73e603bb042e0e359667d *inst/sf_convert.r
@@ -48,7 +48,7 @@ efa55572c498e00be0d1fd4d8d0ed870 *man/track.Rd
 9f27e214bd2686bdb76745cdc85744a1 *tests/testthat/test-map_table.R
 31ab32ac152b5bd4dae8e1ebdb7753ae *tests/testthat/test-misc.R
 f2bb0e243ce3b025227a4ccdbfc6902c *tests/testthat/test-replacement.R
-5c270c8fb17a0ec0b859b87114364a27 *tests/testthat/test-sf.R
+d813ddd6d11073259f5b58f9a2cdbedd *tests/testthat/test-sf.R
 d3ebe642ffb162d08a622a12f26b41d0 *tests/testthat/test-sfFromTable.R
 271488cf2ef9d95b4571a13f33d2537e *tests/testthat/test-spFromTable.R
 a438abd32462353c223dd2e904725035 *tests/testthat/test-sptable.R
