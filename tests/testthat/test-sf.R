@@ -9,6 +9,23 @@ ncpoint <- st_as_sf(as(as(ncline, "Spatial"), "SpatialMultiPointsDataFrame"))
 #sptable(ncpoly)
 #sptable(ncline)
 
+test_that("columns are correct", {
+  sptable(ncpoint[50:52, ]) %>% expect_named(c("object_", "x_", "y_", "branch_"))
+})
+test_that("round trip sf to sp works", {
+  sptable(ncpoly[10:12, ]) %>% sp() %>% expect_s4_class("SpatialPolygonsDataFrame")
+  sptable(st_cast(ncpoly[10:12, ], "POLYGON", warn = FALSE)) %>% sp() %>% expect_s4_class("SpatialPolygonsDataFrame")
+  as_matrix(ncpoly$geometry[[1]]) %>% tibble::as_tibble() %>% expect_named(c("X", "Y", "island_", "branch_"))
+  as_matrix(st_cast(ncpoly$geometry[[1]], "POLYGON", warn = FALSE)) %>% tibble::as_tibble() %>% expect_named(c("X", "Y", "island_", "branch_"))
+  
+  suppressWarnings(as_matrix(st_cast(ncpoly$geometry[[4]], "LINESTRING", warn = FALSE))) %>% tibble::as_tibble() %>% expect_named(c("X", "Y"))
+  as_matrix(st_cast(ncpoly$geometry[[4]], "MULTILINESTRING", warn = FALSE)) %>% tibble::as_tibble() %>% expect_named(c("X", "Y", "branch_"))
+  
+  
+  suppressWarnings(as_matrix(st_cast(ncpoly$geometry[[4]], "POINT", warn = FALSE))) %>% tibble::as_tibble() %>% expect_named(c("X", "Y"))
+  as_matrix(st_cast(ncpoly$geometry[[4]], "MULTIPOINT", warn = FALSE)) %>% tibble::as_tibble() %>% expect_named(c("X", "Y", "branch_"))
+  
+})
 nc <- ncpoly
 test_that("sf conversion works", {
   expect_that(map_table(nc), is_a("list"))
@@ -103,6 +120,19 @@ test_that('internal functions run', {
   spbabel:::sp_sf_types()
   spbabel:::sf_types()
   expect_that(unname(spbabel:::sf_type("SpatialPolygons")), equals("MULTIPOLYGON"))
+})
+
+
+## multipoint
+mp <- st_sf(a = 1:2, geometry = st_sfc(st_multipoint(cbind(0, 1:2)), st_multipoint(cbind(0, 1:4))))
+test_that("multipoints recreated", {
+  tab <- as.data.frame(mp)
+  if (attr(mp, "sf_column") %in% names(mp)) tab[[attr(mp, "sf_column")]] <- NULL
+  map <- spbabel::sptable(mp)
+  crs <- attr(tab[[attr(mp, "sf_column")]], "crs")$proj4string
+  spbabel::sp(map, tab, crs) %>% expect_s4_class("SpatialMultiPointsDataFrame")
+  
+  
 })
 
 # sfh <- st_as_sf(sp(holey))

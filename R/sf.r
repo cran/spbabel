@@ -15,14 +15,7 @@ drop_sf_geometry <- function(x) {
   x[, -match(attr(x, "sf_column"), names(x))]
 }
 
-matrix2list <- function(x) {
-  if (!is.null(dim(x))) {
-    x <- split(x, rep(seq(ncol(x)), each = nrow(x)))
-  } else {
-    x <- as.list(x)
-  }
-  x
-}
+
 
 #' @export
 #importFrom sf st_geometry
@@ -50,7 +43,7 @@ sptable.sf <- function(x, ...) {
   
   gtab[["object_"]] <- as.integer(factor(gtab[["object_"]]))
   if (length(unique(gtab[["type"]])) > 1) warning("geometry has more than one topological type")
-  
+
   sf_to_grisnames <- function(gnames) {
     gnames <- gsub("^X$", "x_", gnames)
     gnames <- gsub("^Y$", "y_", gnames)
@@ -60,7 +53,12 @@ sptable.sf <- function(x, ...) {
     gnames
   }
   names(gtab) <- sf_to_grisnames(names(gtab))
-  gtab$order_ <-  seq(nrow(gtab))
+  ## Points don't get order
+
+  if (!any(grepl("POINT", gtab[["type_"]]))) {
+    gtab$order_ <-  seq(nrow(gtab))
+  }
+ 
   gtab$type_ <- NULL
   #if (!is.null(gtab[["parent_"]])) {
   #  gtab$island_ <- gtab$parent_ == 1
@@ -191,10 +189,15 @@ as_matrix.MULTIPOLYGON <-
     
   }
 
+#' @importFrom utils tail
 as_matrix.POLYGON <-
   function(x, ...) {
-    do.call(rbind, lapply(seq_along(x),
+    out <- do.call(rbind, lapply(seq_along(x),
                           function(branch_) cbind(matrixOrVector(x[[branch_]], class(x)[1L]),  branch_)))
+    ## we need to add the island status as a copy of branch for POLYGON
+    out <- cbind(out, out[, ncol(out)])
+    colnames(out)[tail(seq_len(ncol(out)), 2)] <- c("island_", "branch_")
+    out
   }
 
 as_matrix.MULTILINESTRING <-
