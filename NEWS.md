@@ -1,3 +1,11 @@
+# spbabel 0.5.0
+
+* Declare 'vertex_table' as old class for sp to keep its data frame restriction happy. 
+
+* Fix order bug in creation of `object_` for sf objects. 
+
+* support for sf columns to spbabel and map_table
+
 # spbabel 0.4.8
 
 * bug fix, sp recomposition for multpoint now correctly splits on object_ (rather than branch_)

@@ -11,10 +11,28 @@ map_table.sf <- function(x, ...) {
   out
 }
 
+#' @export
+map_table.sfc <- function(x, ...) {
+  xa <- data.frame(object = seq_len(length(x)))
+  xa[["geometry"]] <- x
+  class(xa) <- c("sf", "data.frame")
+  attr(xa, "sf_column") <- "geometry"
+  attr(xa, "agr") <- factor(NA, levels = c("constant", "aggregate", "identity"))
+  map_table(xa)
+}
+
 drop_sf_geometry <- function(x) {
   x[, -match(attr(x, "sf_column"), names(x))]
 }
-
+#' @export
+sptable.sfc <- function(x, ...) {
+  xa <- data.frame(object = seq_len(length(x)))
+  xa[["geometry"]] <- x
+  class(xa) <- c("sf", "data.frame")
+  attr(xa, "sf_column") <- "geometry"
+  attr(xa, "agr") <- factor(NA, levels = c("constant", "aggregate", "identity"))
+  sptable(xa)
+}
 
 
 #' @export
@@ -41,7 +59,8 @@ sptable.sf <- function(x, ...) {
     gtab[["branch_"]] <- as.integer(factor(gtab[["branch_"]]))
   }
   
-  gtab[["object_"]] <- as.integer(factor(gtab[["object_"]]))
+  gtab[["object_"]] <- as.integer(factor(gtab[["object_"]], unique(gtab$object_)))
+  
   if (length(unique(gtab[["type"]])) > 1) warning("geometry has more than one topological type")
 
   sf_to_grisnames <- function(gnames) {
