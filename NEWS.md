@@ -1,3 +1,11 @@
+# spbabel dev
+
+* Fix tibble problem (mismatched method signature). 
+
+* Old vignette deleted, see {silicate} for a better approach to spbabel. 
+
+* Remove maptools. 
+
 # 0.5.5
 
 * cleaned up Suggests for CRAN.
